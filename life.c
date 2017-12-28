@@ -34,18 +34,17 @@ void uart_init()
 }
 
 // --- GAME ---
-// using 16 cells and fixed initial pattern
-// number of cells is linked to the number of bits used in the pattern
+// using 16 cells and a selection of initial pattern
 #define numOfCells  16
 int cells[numOfCells+2];
 // play for a few generations
-int runGenerations = 20;
+int maxGenerations = 20;
 
 // set initial pattern
 // known patterns from the original article, manually center alligned
 // 1F -> oscillating patter with period of 6
 // 11111 -> 0000 0011 1110 0000 ->03E0
-//unsigned int pattern = 0x03E0;
+unsigned int pattern = 0x03E0;
 
 // 15 -> Oscillates,fourth form of number 1F  
 // 10101 -> 0000 0101 0100 0000 -> 0540
@@ -53,7 +52,7 @@ int runGenerations = 20;
 
 // 17 -> glider with period 1  
 // 10111 ->  1011 1000 0000 0000-> b800
-unsigned int pattern = 0xb800;
+// unsigned int pattern = 0xb800;
 
 // 5 -> dies after generation 2 
 // 101 -> 0000 0010 1000 0000 -> 0280
@@ -66,11 +65,10 @@ unsigned int pattern = 0xb800;
 // random pattern-> survives up to generation 
 // unsigned int pattern = 0xf0ff;
 
-void print_pattern(int pattern)
+void print_pattern()
 {
-	char patternFormatted[10];
-	sprintf(patternFormatted,"%0X\n",pattern);
-	uart_write("Starting pattern ");
+	char patternFormatted[20];
+	sprintf(patternFormatted,"Using pattern %04X\n",pattern);
 	uart_write(patternFormatted);
 }
 
@@ -89,7 +87,7 @@ void game_init()
 			cells[cellCounter] = 0;
 	  	}
 	  	mask = mask >>1;
-	  	cellCounter++;
+	  	++cellCounter;
 	}
 	cells[numOfCells] = 0;
 	cells[numOfCells + 1] = 0;
@@ -118,7 +116,7 @@ void calculate_next_generation()
 		// continue to next cell
 		t2 = t1;
 		t1 = t0;
-		currentCell++;	
+		++currentCell;	
 	}while (currentCell<numOfCells);
 }
 
@@ -128,7 +126,7 @@ void print_cells(int currentGeneration)
 	char generation[8];
 	sprintf(generation,"%03d: |",currentGeneration);
 	uart_write(generation);
-  	for (i=0;i<numOfCells;i++)
+  	for (i=0;i<numOfCells;++i)
   	{	
   		if (cells[i] == 0)
   		{
@@ -142,14 +140,28 @@ void print_cells(int currentGeneration)
   	uart_write("\n");
 }
 
-void game_run(int numOfGenerations)
+int colonyIsAlive()
+{
+	int cellCounter;
+	int deadCells = 0;
+	for (cellCounter = 0;cellCounter < numOfCells;++cellCounter)
+	{
+		if (cells[cellCounter] == 0)
+		{
+			++deadCells;
+		}
+	}
+	return deadCells != numOfCells;
+}
+
+void game_run()
 {
 	int currentGeneration = 0;
 	print_cells(currentGeneration);
-	while (currentGeneration < numOfGenerations)
+	while (currentGeneration < maxGenerations && colonyIsAlive())
 	{
 		calculate_next_generation();
-		currentGeneration++;
+		++currentGeneration;
 		print_cells(currentGeneration);
 	}
 }
@@ -158,8 +170,8 @@ void main() {
 	uart_init();
 	uart_write("\nOne Dimensional Life Game (by J.K.Millen Phd, Byte Magazine,DEC 1978)\n");
 	uart_write("Coded as a toy project for STM8 by N.Tsakonas (Dec 2017)\n");
-	print_pattern(pattern);
+	print_pattern();
 	game_init();
-	game_run(runGenerations);
+	game_run();
 	while(1);
 }

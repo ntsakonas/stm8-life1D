@@ -1,3 +1,8 @@
+//
+// This file was part of the SDCC examples
+// https://github.com/vdudouyt/sdcc-examples-stm8
+// no license was attached and therefore it is provided as is
+// 
 /* GPIO */
 #define PA_ODR *(unsigned char*)0x5000
 #define PA_IDR *(unsigned char*)0x5001

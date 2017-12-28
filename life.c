@@ -3,19 +3,21 @@
 #include "stm8l.h"
 
 // --- UART CODE ---
-// write string to uart
-int uart_write(const char *str) {
+// slightly modified version from sdcc samples
+// see https://github.com/vdudouyt/sdcc-examples-stm8
+void uart_write(const char *str) {
 	char i;
 	for(i = 0; i < strlen(str); i++) {
 		while(!(USART1_SR & USART_SR_TXE));
 		USART1_DR = str[i];
 	}
-	return(i); // Bytes sent
 }
 
 void uart_init()
 {
-	CLK_DIVR = 0x00; // Set the frequency to 16 MHz
+	// changing the internal clock does not work this way,
+	// so the CPU runs at the default clock of 2MHZ
+	// CLK_DIVR = 0x00; // Set the frequency to 16 MHz
 	CLK_PCKENR1 = 0xFF; // Enable peripherals
 
 	PC_DDR = 0x08; // Put TX line on
@@ -23,8 +25,12 @@ void uart_init()
 
 	USART1_CR2 = USART_CR2_TEN; // Allow TX & RX
 	USART1_CR3 &= ~(USART_CR3_STOP1 | USART_CR3_STOP2); // 1 stop bit
-	USART1_BRR2 = 0x03; USART1_BRR1 = 0x68; // 9600 baud
-
+	// due to clock mismatch, the initial plan to use 9600 actually configures
+	// the UART to 1200, so new calculations are in order using CPU clock = 2Mhz
+	// USART1_BRR2 = 0x03; USART1_BRR1 = 0x68; // 9600 baud if it was 16MHZ, but it is actually 1200
+	// calculations based on 2MHZ clock
+	// USART1_BRR2 = 0x00; USART1_BRR1 = 0x1a; // 4800 baud
+	USART1_BRR2 = 0x00; USART1_BRR1 = 0x0d; // 9600 baud
 }
 
 // --- GAME ---
@@ -36,21 +42,29 @@ int cells[numOfCells+2];
 int runGenerations = 20;
 
 // set initial pattern
-// maybe i should get it from the user through the serial port
-// for now, I am setting an oscillating pattern
-
+// known patterns from the original article, manually center alligned
 // 1F -> oscillating patter with period of 6
-// manually center alligned: 11111 -> 0000 0011 1110 0000 ->03E0
-unsigned int pattern = 0x03E0;
+// 11111 -> 0000 0011 1110 0000 ->03E0
+//unsigned int pattern = 0x03E0;
 
-// 27 ->100111 -> 0000 0100 1110 0000 -> 04E0
-//unsigned int pattern = 0x04E0;
-// 15 -> 10101 -> 0000 0101 0100 0000 -> 0540
+// 15 -> Oscillates,fourth form of number 1F  
+// 10101 -> 0000 0101 0100 0000 -> 0540
 //unsigned int pattern = 0x0540;
-// 5 -> 101 -> 0000 0010 1000 0000 -> 0280
+
+// 17 -> glider with period 1  
+// 10111 ->  1011 1000 0000 0000-> b800
+unsigned int pattern = 0xb800;
+
+// 5 -> dies after generation 2 
+// 101 -> 0000 0010 1000 0000 -> 0280
 //unsigned int pattern = 0x0280;
 
-//unsigned int pattern = 0xf0ff;
+// 27 -> becomes numbers 3F,DB,2B5,FF,37B,A05,201,0
+// 100111 -> 0000 0100 1110 0000 -> 04E0
+//unsigned int pattern = 0x04E0;
+
+// random pattern-> survives up to generation 
+// unsigned int pattern = 0xf0ff;
 
 void print_pattern(int pattern)
 {

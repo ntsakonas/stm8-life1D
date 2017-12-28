@@ -1,3 +1,35 @@
+// This is a toy project for exploring the STM8 mcu.
+// the code was tested on a minimal STM8S103F3 board
+// the program output is availble via serial port (9600,8,N,1)
+// modify the game variables (pattern/generations) to play.
+//
+// Author: Nick Tsakonas (2017)
+//
+// One dimensional game of life (by J.K.Millen)
+// --------------------------------------------
+// This is a one dimensional variation of Conway's Game Of Life, 
+// that appearred on Byte Magazine,vol3, No.12 p68-p74 , DEC 1978.
+// Cells live in a single row and next generation relies on the +2/-2
+// surrounding cells according to the following rules:
+// Rule 1: Birth. cells that are OFF but have either two or three neighbors
+//		   will go ON.
+// Rule 2: Survival.cells that are ON and have two or four neighbors, stay ON.
+//         Those with zero or one neighbors ON, die of loneliness.
+//         Those with three ON, die from overcrowding.  	
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
 #include <string.h>
 #include <stdio.h>
 #include "stm8l.h"
@@ -37,7 +69,8 @@ void uart_init()
 // using 16 cells and a selection of initial pattern
 #define numOfCells  16
 int cells[numOfCells+2];
-// play for a few generations
+// GAME VARIABLES
+// play up to 20 generations
 int maxGenerations = 20;
 
 // set initial pattern
@@ -61,9 +94,6 @@ unsigned int pattern = 0x03E0;
 // 27 -> becomes numbers 3F,DB,2B5,FF,37B,A05,201,0
 // 100111 -> 0000 0100 1110 0000 -> 04E0
 //unsigned int pattern = 0x04E0;
-
-// random pattern-> survives up to generation 
-// unsigned int pattern = 0xf0ff;
 
 void print_pattern()
 {
